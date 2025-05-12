@@ -1,64 +1,36 @@
-import json
 import logging
-from datetime import datetime
-from typing import Any, Dict, List
+import os
 
-import pandas as pd
+log_path = "../logs/services.log"
 
-from src.logger import get_logger
-
-logger = get_logger("services", "../logs/services.log", logging.INFO)
-
-
-def read_transactions_from_excel(input_file: str) -> List[Dict[str, Any]]:
-    """Функция читает транзакции из Excel-файла и возвращает их в виде списка словарей"""
-    try:
-        df = pd.read_excel(input_file)
-        logging.info("Преобразуем DataFrame в список словарей")
-        transactions = df.to_dict(orient="records")
-    except FileNotFoundError:
-        logging.error(f"Файл не найден: {input_file}")
-        raise
-    except pd.errors.ParserError as e:
-        logging.error(f"Ошибка при чтении Excel файла: {e}")
-        raise
-    return transactions
+# Устраняет ошибку отсутствия файла при импорте модуля
+if str(os.path.dirname(os.path.abspath(__name__)))[-3:] != "src":
+    log_path = log_path[1:]
 
 
-def investment_bank(month: str, transactions: List[Dict[str, Any]], limit: int) -> float:
-    """
-    Рассчитывает сумму, которая могла бы быть отложена в Инвесткопилку за указанный месяц
-    """
-    if limit <= 0:
-        raise ValueError("Лимит округления должен быть больше 0")
-    try:
-        target_month = datetime.strptime(month, "%Y-%m")
-        total_savings = 0
-        logging.debug(
-            f"Рассчитываем сумму накоплений для Инвесткопилки по каждой операции и общую сумму накоплений за"
-            f" {month}месяц"
-        )
-        for transaction in transactions:
-            transaction_date = datetime.strptime(transaction["Дата операции"], "%d.%m.%Y %H:%M:%S")
-            if (
-                    transaction_date.year == target_month.year
-                    and transaction_date.month == target_month.month
-                    and transaction["Сумма операции"] < 0
-            ):
-                amount = abs(transaction["Сумма операции"])
-                saving = limit - (amount % limit)
-                total_savings += saving
-                logging.debug(
-                    f"Дата операции: {transaction['Дата операции']}, сумма: {transaction['Сумма операции']}, "
-                    f"накопление: {saving}, Общая сумма накоплений за месяц: {total_savings}"
-                )
-        result_data = {
-            "Месяц": month,
-            "Лимит округления": limit,
-            "Общая сумма накоплений за месяц": float(round(total_savings, 2)),
-        }
-        result_json = json.dumps(result_data, ensure_ascii=False, indent=4)
-        return result_json
-    except ValueError as e:
-        logging.error(f"Ошибка при обработке данных: {e}")
-        raise ValueError("Неверный формат данных")
+logger = logging.getLogger("services")
+file_handler = logging.FileHandler(log_path, "w", encoding="utf-8")
+file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
+
+
+def simple_search(transactions_list: list[dict], search_info: str) -> list[dict]:
+    """Функция принимает список словарей с данными о транзакциях и строку поиска,
+    а возвращает список тех транзакций, в описании или категории которых есть строка поиска."""
+    filtered_transactions = []
+    for transaction in transactions_list:
+        try:
+            # Определяет, где искать
+            if transaction.get("Категория"):
+                search_in = str(transaction["Категория"]) + transaction["Описание"]
+            else:
+                search_in = transaction["Описание"]
+            if search_info.lower() in search_in.lower():
+                filtered_transactions.append(transaction)
+        except KeyError as e:
+            logger.warning(f"Передана транзакция без необходимого ключа: {e}")
+            continue
+    logger.info(f"Получено {len(filtered_transactions)} транзакций из {len(transactions_list)}.")
+    return filtered_transactions

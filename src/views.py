@@ -1,20 +1,26 @@
 import json
+import logging
 import os
 
-from src.utils import (get_cards_data, get_currency_rates, get_data_period, get_greeting, get_stock_prices,
-                       get_top_transactions)
+log_path = "../logs/views.log"
 
-user_settings_file = os.path.abspath("./user_settings.json")
+# Устраняет ошибку отсутствия файла при импорте модуля
+if str(os.path.dirname(os.path.abspath(__name__)))[-3:] != "src":
+    log_path = log_path[1:]
 
 
-def home_page(date_string):
-    """Основная функция для страницы Главная"""
-    df = get_data_period(date_string)
-    response = {
-        "greeting": get_greeting(),
-        "last_digits": get_cards_data(df),
-        "top_transactions": get_top_transactions(df),
-        "currency_rates": get_currency_rates(user_settings_file),
-        "stock_prices": get_stock_prices(user_settings_file),
-    }
-    print(json.dumps(response, ensure_ascii=False, indent=4))
+logger = logging.getLogger("views")
+file_handler = logging.FileHandler(log_path, "w", encoding="utf-8")
+file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
+
+
+def create_report(data: dict | list[dict], file_path: str) -> None:
+    """Записывает информацию в JSON-файл."""
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        logger.critical(f"Произошла ошибка при записи в файл: {e}")
