@@ -1,6 +1,5 @@
 import pytest
 
-
 @pytest.fixture
 def short_list_of_transactions():
     return [
