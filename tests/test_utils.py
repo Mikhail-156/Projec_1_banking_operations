@@ -1,6 +1,6 @@
 import pytest
 
-from src.utils import sort_by_period
+from src.utils import sort_by_period, greet_user
 
 
 @pytest.mark.parametrize(

@@ -2,9 +2,9 @@ import datetime
 import logging
 import os
 import re
-
+from datetime import datetime
 import pandas as pd
-
+from typing import Any
 from src.api_search import get_currency_rate, get_stock_exchange
 
 log_path = "../logs/utils.log"
@@ -21,23 +21,24 @@ logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 
 
-def greet_user(date: str) -> str:
-    """Приветствует пользователя в зависимости от текущего времени суток.
-    00:00-05:59: ночь
-    06:00-11:59: утро
-    12:00-17:59: день
-    18:00-23:59: вечер"""
-    date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
-    current_time = date_obj.replace(year=1, month=1, day=1)
-    logger.info(f"Программа приветствует пользователя в {date_obj}")
-    if current_time >= datetime.datetime(1, 1, 1, 18, 0, 0):
-        return "Добрый вечер"
-    elif current_time >= datetime.datetime(1, 1, 1, 12, 0, 0):
-        return "Добрый день"
-    elif current_time >= datetime.datetime(1, 1, 1, 6, 0, 0):
-        return "Доброе утро"
+def greet_user(date_time: Any) -> str:
+    """
+    Функция принимает строку с date и time (либо жми энтер если в падлу)
+    после выводит приветствие в зависимости от чего вы вели .
+    """
+    if date_time is None:
+        date_time = datetime.now()
     else:
-        return "Доброй ночи"
+        date_time = datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")
+    hour = date_time.hour
+    if 5 <= hour < 12:
+        return "Доброе утро!"
+    elif 12 <= hour < 18:
+        return "Добрый день!"
+    elif 18 <= hour < 23:
+        return "Добрый вечер!"
+    else:
+        return "Доброй ночи!"
 
 
 def get_cards_numbers(transactions_list: pd.DataFrame) -> list[dict]:
