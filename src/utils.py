@@ -133,7 +133,7 @@ def sort_by_period(
     """Из списка всех операций возвращает только операции за текущий период
     (неделя, месяц, год или за всё время). По умолчанию - месяц.
     Если таких нет, то возвращает пустой список."""
-    current_period = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S").strftime("%m.%Y-%W")
+    current_period = datetime.strptime(date, "%Y-%m-%d %H:%M:%S").strftime("%m.%Y-%W")
     current_period_transactions = []
     string_period = ""  # period = "ALL"
     if period == "W":
@@ -146,11 +146,11 @@ def sort_by_period(
         try:
             if any(
                 string_period
-                in datetime.datetime.strptime(x["Дата операции"], "%d.%m.%Y %H:%M:%S").strftime("%m.%Y-%W")
+                in datetime.strptime(x["Дата операции"], "%d.%m.%Y %H:%M:%S").strftime("%m.%Y-%W")
                 for x in transactions_list
             ):
                 for transaction in transactions_list:
-                    transaction_date = datetime.datetime.strptime(
+                    transaction_date = datetime.strptime(
                         str(transaction["Дата операции"]), "%d.%m.%Y %H:%M:%S"
                     ).strftime("%m.%Y-%W")
                     if re.search(string_period, transaction_date) and transaction["Статус"] == status:
